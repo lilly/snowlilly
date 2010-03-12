@@ -38,59 +38,131 @@
 
 #include <Carbon/Carbon.h>
 
+// Lilly's dirty stuff.
+// Keymap handling is broken on OSX, this fixes things at least for ASCII latin
+// & Dvorak keyboards.
+// New problem : ZSQD (ascii equivalent of WSAD) is broken. Conflict between
+// positional shortcuts vs symbolic shortcuts.
+//
+// *** THIS IS A DIRTY HACK ***
+// ***      NOT A FIX       ***
+
+KEY lTranslateKey(U16 keycode)
+{
+	OSStatus theStatus;
+	KeyboardLayoutRef theCurrentLayout;
+	const UCKeyboardLayout *uchrData;
+
+	theStatus = KLGetCurrentKeyboardLayout(&theCurrentLayout);
+	theStatus = KLGetKeyboardLayoutProperty(theCurrentLayout, kKLuchrData, (const void **)&uchrData);
+
+	if (theStatus == noErr && uchrData != 0)
+	{
+		CFStringRef theString;
+		UniChar unibuf[5];
+		char charbuf[5];						// Yay. Why 2 buffers ? Because
+												// this is a DIRTY HACK.
+		UniCharCount actualStringLength;
+		UInt32 deadKeyState = 0;
+
+		theStatus = UCKeyTranslate(
+								   uchrData,
+								   keycode,
+								   kUCKeyActionDisplay,
+								   0, // No modifier key
+								   LMGetKbdType(),
+								   kUCKeyTranslateNoDeadKeysMask,
+								   &deadKeyState,
+								   sizeof(unibuf)/sizeof(UniChar),
+								   &actualStringLength,
+								   unibuf
+								   );
+		// Get a CFString to convert from Unicode to ASCII
+		theString = CFStringCreateWithCharacters(kCFAllocatorDefault, unibuf, actualStringLength);
+		CFStringGetCString(theString, charbuf, 256, kCFStringEncodingNonLossyASCII);
+		CFRelease(theString);
+
+		// Really dirty. Some chars aren't correct,
+		// and LL use special values for some keys.
+		if ( charbuf[0] >= 'a' && charbuf[0] <= 'z')	// All uppercase
+			charbuf[0] = (charbuf[0] - 'a') + 'A';
+
+		else if ((U8)charbuf[0] == 249)					// latin 'ù'
+			charbuf[0] = '\'';							// map it to '
+
+		else if (charbuf[0] == '/')						// LL KEY_DIVIDE
+			charbuf[0] = KEY_DIVIDE;
+
+		else if (charbuf[0] == '=')						// LL KEY_EQUALS
+			charbuf[0] = KEY_EQUALS;
+
+		else if (charbuf[0] == '-')						// LL KEY_HYPHEN
+			charbuf[0] = KEY_HYPHEN;
+
+		return charbuf[0];
+	}
+
+	return '\0';
+}
+
 LLKeyboardMacOSX::LLKeyboardMacOSX()
 {
+	// *** Lilly's dirty stuff ***
+	// translate the keycode in extended ASCII character.
+	// DON'T translate the top row (numbers) as they're positional shortcuts.
+	// Keypad is not translated, nor invariable keys (see HIToolbox/Events.h)
+
 	// Virtual keycode mapping table.  Yes, this was as annoying to generate as it looks.
-	mTranslateKeyMap[0x00] = 'A';
-	mTranslateKeyMap[0x01] = 'S';
-	mTranslateKeyMap[0x02] = 'D';
-	mTranslateKeyMap[0x03] = 'F';
-	mTranslateKeyMap[0x04] = 'H';
-	mTranslateKeyMap[0x05] = 'G';
-	mTranslateKeyMap[0x06] = 'Z';
-	mTranslateKeyMap[0x07] = 'X';
-	mTranslateKeyMap[0x08] = 'C';
-	mTranslateKeyMap[0x09] = 'V';
-	mTranslateKeyMap[0x0b] = 'B';
-	mTranslateKeyMap[0x0c] = 'Q';
-	mTranslateKeyMap[0x0d] = 'W';
-	mTranslateKeyMap[0x0e] = 'E';
-	mTranslateKeyMap[0x0f] = 'R';
-	mTranslateKeyMap[0x10] = 'Y';
-	mTranslateKeyMap[0x11] = 'T';
-	mTranslateKeyMap[0x12] = '1';
-	mTranslateKeyMap[0x13] = '2';
-	mTranslateKeyMap[0x14] = '3';
-	mTranslateKeyMap[0x15] = '4';
-	mTranslateKeyMap[0x16] = '6';
-	mTranslateKeyMap[0x17] = '5';
-	mTranslateKeyMap[0x18] = '=';	// KEY_EQUALS
-	mTranslateKeyMap[0x19] = '9';
-	mTranslateKeyMap[0x1a] = '7';
-	mTranslateKeyMap[0x1b] = '-';	// KEY_HYPHEN
-	mTranslateKeyMap[0x1c] = '8';
-	mTranslateKeyMap[0x1d] = '0';
-	mTranslateKeyMap[0x1e] = ']';
-	mTranslateKeyMap[0x1f] = 'O';
-	mTranslateKeyMap[0x20] = 'U';
-	mTranslateKeyMap[0x21] = '[';
-	mTranslateKeyMap[0x22] = 'I';
-	mTranslateKeyMap[0x23] = 'P';
+	mTranslateKeyMap[0x00] = lTranslateKey(0x00); // 'A'
+	mTranslateKeyMap[0x01] = lTranslateKey(0x01); // 'S';
+	mTranslateKeyMap[0x02] = lTranslateKey(0x02); // 'D';
+	mTranslateKeyMap[0x03] = lTranslateKey(0x03); // 'F';
+	mTranslateKeyMap[0x04] = lTranslateKey(0x04); // 'H';
+	mTranslateKeyMap[0x05] = lTranslateKey(0x05); // 'G';
+	mTranslateKeyMap[0x06] = lTranslateKey(0x06); // 'Z';
+	mTranslateKeyMap[0x07] = lTranslateKey(0x07); // 'X';
+	mTranslateKeyMap[0x08] = lTranslateKey(0x08); // 'C';
+	mTranslateKeyMap[0x09] = lTranslateKey(0x09); // 'V';
+	mTranslateKeyMap[0x0b] = lTranslateKey(0x0b); // 'B';
+	mTranslateKeyMap[0x0c] = lTranslateKey(0x0c); // 'Q';
+	mTranslateKeyMap[0x0d] = lTranslateKey(0x0d); // 'W';
+	mTranslateKeyMap[0x0e] = lTranslateKey(0x0e); // 'E';
+	mTranslateKeyMap[0x0f] = lTranslateKey(0x0f); // 'R';
+	mTranslateKeyMap[0x10] = lTranslateKey(0x10); // 'Y';
+	mTranslateKeyMap[0x11] = lTranslateKey(0x11); // 'T';
+	mTranslateKeyMap[0x12] = '1';	// top row
+	mTranslateKeyMap[0x13] = '2';	// top row
+	mTranslateKeyMap[0x14] = '3';	// top row
+	mTranslateKeyMap[0x15] = '4';	// top row
+	mTranslateKeyMap[0x16] = '6';	// top row
+	mTranslateKeyMap[0x17] = '5';	// top row
+	mTranslateKeyMap[0x18] = lTranslateKey(0x18); // '=';	// KEY_EQUALS
+	mTranslateKeyMap[0x19] = '9';	// top row
+	mTranslateKeyMap[0x1a] = '7';	// top row
+	mTranslateKeyMap[0x1b] = lTranslateKey(0x1b); // '-';	// KEY_HYPHEN
+	mTranslateKeyMap[0x1c] = '8';	// top row
+	mTranslateKeyMap[0x1d] = '0';	// top row
+	mTranslateKeyMap[0x1e] = lTranslateKey(0x1e); // ']';
+	mTranslateKeyMap[0x1f] = lTranslateKey(0x1f); // 'O';
+	mTranslateKeyMap[0x20] = lTranslateKey(0x20); // 'U';
+	mTranslateKeyMap[0x21] = lTranslateKey(0x21); // '[';
+	mTranslateKeyMap[0x22] = lTranslateKey(0x22); // 'I';
+	mTranslateKeyMap[0x23] = lTranslateKey(0x23); // 'P';
 	mTranslateKeyMap[0x24] = KEY_RETURN,
-	mTranslateKeyMap[0x25] = 'L';
-	mTranslateKeyMap[0x26] = 'J';
-	mTranslateKeyMap[0x27] = '\'';
-	mTranslateKeyMap[0x28] = 'K';
-	mTranslateKeyMap[0x29] = ';';
-	mTranslateKeyMap[0x2a] = '\\';
-	mTranslateKeyMap[0x2b] = ',';
-	mTranslateKeyMap[0x2c] = KEY_DIVIDE;
-	mTranslateKeyMap[0x2d] = 'N';
-	mTranslateKeyMap[0x2e] = 'M';
-	mTranslateKeyMap[0x2f] = '.';
+	mTranslateKeyMap[0x25] = lTranslateKey(0x25); // 'L';
+	mTranslateKeyMap[0x26] = lTranslateKey(0x26); // 'J';
+	mTranslateKeyMap[0x27] = lTranslateKey(0x27); // '\'';
+	mTranslateKeyMap[0x28] = lTranslateKey(0x28); // 'K';
+	mTranslateKeyMap[0x29] = lTranslateKey(0x29); // ';';
+	mTranslateKeyMap[0x2a] = lTranslateKey(0x2a); // '\\';
+	mTranslateKeyMap[0x2b] = lTranslateKey(0x2b); // ',';
+	mTranslateKeyMap[0x2c] = lTranslateKey(0x2c); // KEY_DIVIDE;
+	mTranslateKeyMap[0x2d] = lTranslateKey(0x2d); // 'N';
+	mTranslateKeyMap[0x2e] = lTranslateKey(0x2e); // 'M';
+	mTranslateKeyMap[0x2f] = lTranslateKey(0x2f); // '.';
 	mTranslateKeyMap[0x30] = KEY_TAB;
 	mTranslateKeyMap[0x31] = ' ';	// space!
-	mTranslateKeyMap[0x32] = '`';
+	mTranslateKeyMap[0x32] = lTranslateKey(0x32); // '`';
 	mTranslateKeyMap[0x33] = KEY_BACKSPACE;
 	mTranslateKeyMap[0x35] = KEY_ESCAPE;
 	//mTranslateKeyMap[0x37] = 0;	// Command key.  (not used yet)
