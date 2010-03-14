@@ -106,6 +106,11 @@ public:
 	static EWearableType getCurrentWearableType()					{ return sCurrentWearableType; }
 
 	// Callbacks
+	// Meerkat appearence import/export
+        // reX: new functions
+	static void		onBtnImport( void* userdata );
+	static void		onBtnExport( void* userdata );
+
 	static void		onBtnOk( void* userdata );
 	static void		onBtnMakeOutfit( void* userdata );
 	static void		onMakeOutfitCommit( LLMakeOutfitDialog* dialog, void* userdata );

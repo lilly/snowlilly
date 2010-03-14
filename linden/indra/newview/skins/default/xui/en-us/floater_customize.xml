@@ -1121,4 +1121,10 @@ scratch and wear it.
 	     height="20" label="Make Outfit..." label_selected="Make Outfit..."
 	     mouse_opaque="true" name="Make Outfit" left="100" scale_image="true"
 	     width="100" />
+        <button bottom="-536" follows="right|bottom" font="SansSerif" halign="center" height="20"
+                hidden="false" label="Export" label_selected="Export" right="-280" mouse_opaque="true"
+                name="Export" scale_image="true" width="80" />
+        <button bottom="-536" follows="right|bottom" font="SansSerif" halign="center" height="20"
+                hidden="false" label="Import" label_selected="Import" right="-370" mouse_opaque="true"
+                name="Import" scale_image="true" width="80" />
 </floater>

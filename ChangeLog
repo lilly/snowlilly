@@ -2,3 +2,11 @@
 
 	* README.txt
 
+2010-03-08  Lilly  <pixelgirls@gmail.com>
+
+	* linden/indra/newview/skins/default/xui/en-us/floater_customize.xml,
+	* linden/indra/newview/llfloatercustomize.cpp (setCurrentWearableType),
+	* linden/indra/newview/llfloatercustomize.h (LLFloater),
+	* linden/indra/newview/llwearable.cpp (exportFile),
+	* linden/indra/newview/llwearable.h (LLWearable):
+	Appearance import/export from Meerkat viewer
