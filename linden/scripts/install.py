@@ -64,7 +64,7 @@ def add_indra_lib_path():
 base_dir = add_indra_lib_path()
 
 import copy
-import md5
+import hashlib
 import optparse
 import os
 import platform
@@ -106,7 +106,7 @@ class InstallFile(object):
         return "ifile{%s:%s}" % (self.pkgname, self.url)
 
     def _is_md5sum_match(self):
-        hasher = md5.new(file(self.filename, 'rb').read())
+        hasher = hashlib.md5(file(self.filename, 'rb').read())
         if hasher.hexdigest() == self.md5sum:
             return  True
         return False
