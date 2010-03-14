@@ -38,10 +38,10 @@ const S32 LL_VERSION_MINOR = 2;
 const S32 LL_VERSION_PATCH = 4;
 const S32 LL_VERSION_BUILD = 0;
 
-const char * const LL_CHANNEL = "Snowglobe Release";
+const char * const LL_CHANNEL = "SnowLilly";
 
 #if LL_DARWIN
-const char * const LL_VERSION_BUNDLE_ID = "com.secondlife.snowglobe.viewer";
+const char * const LL_VERSION_BUNDLE_ID = "com.secondlife.snowlilly.viewer";
 #endif
 
 #endif
